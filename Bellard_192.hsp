@@ -84,6 +84,7 @@ DEBUG=0
 	loop
 
 *workmode
+	worktxtname="worklist_sample.txt"
 	screen 0,480,540
 	title "work mode"
 	pos 0,0
@@ -344,10 +345,11 @@ DEBUG=0
 		mes2 hexadecimal_dd(host_ans)+"\n"
 	}
 	if (precision==1){
-		tmp=host_ans.2
-		host_ans.2=host_ans.0
-		host_ans.0=tmp
-		mes2 hexadecimal_i32(host_ans)+"\n"
+		dim_i64 ltmp,3
+		ltmp.0=host_ans.2
+		ltmp.1=host_ans.1
+		ltmp.2=host_ans.0
+		mes2 hexadecimal_i32(ltmp)+"\n"
 	}
 	return
 
@@ -477,7 +479,11 @@ DEBUG=0
 		filestr+=hexadecimal_dd(host_ans)+"\n"
 	}
 	if (precision==1){
-		filestr+=hexadecimal_i32(host_ans)+"\n"
+		dim_i64 ltmp,3
+		ltmp.0=host_ans.2
+		ltmp.1=host_ans.1
+		ltmp.2=host_ans.0
+		filestr+=hexadecimal_i32(ltmp)+"\n"
 	}
 
 	filestr+=""+deviceno+"\t"+HCLGetDeviceInfo_s(CL_DEVICE_NAME)+"\n"
