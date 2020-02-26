@@ -1,0 +1,50 @@
+#include "hexsademical.as"
+
+chdir "work"
+
+
+
+dim fnum,7
+dim sumdata,48
+sdim fstr,2048
+repeat 7
+	ccnt=cnt
+	repeat -1
+		no=cnt
+		fname=""+ccnt+"\\"+ccnt+"_"+no+".txt"
+		exist fname
+		if strsize==-1:break
+		fnum.ccnt++
+		bload fname,fstr
+		notesel fstr
+		noteget data,0
+		repeat 48
+			moji=peek(data,47-cnt)-48
+			if moji>10:moji-=7
+			sumdata.(47-cnt)+=moji
+			if (sumdata.(47-cnt)>=16){
+				sumdata.(47-cnt)-=16
+				if cnt!=47:sumdata.(46-cnt)++
+			}
+		loop
+	loop
+loop
+
+
+mes "file num"
+repeat 7
+	mes ""+cnt+":"+fnum.cnt
+loop
+
+mes
+
+
+sdim s,1
+sdim outstr,48
+repeat 48
+	moji=sumdata.cnt
+	if moji>=10:moji+=7
+	poke s,0,moji+48
+	outstr+=s
+loop
+mes outstr

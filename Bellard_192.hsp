@@ -1,0 +1,613 @@
+//BBP系公式のBellardの公式で任意の円周率の16進数の数値を求める。擬似四倍精度バージョン、精度保証なし
+//分子numer,分母denom
+#const global BIGSUM_SIZE 65536//ここを変更するならkernelも変えないといけない
+#const global LOCAL_WORK_SIZE 256//ここを変更するならkernelも変えないといけない
+#const global GLOBAL_WORK_SIZE BIGSUM_SIZE*LOCAL_WORK_SIZE
+DEBUG=0
+
+
+#include "HSPCL64.as"
+#include "hexsademical.as"
+#include "KernelFuncs.as"
+	dir_my=dir_cur
+	_ExHCLSetCommandQueueProperties 2
+	HCLinit
+	if HCLGetDevCount()=0:dialog "対応ビデオカードがありません。終了します",1:end
+
+	BATCHSIZE=int64("137438953472")
+	goto*normalmode
+*normalmode
+	screen 0,480,540
+	title "normal mode"
+	pos 0,0
+	color 194,255,255//1
+	boxf 0,0,640,64
+	color 255,194,255//2
+	boxf 0,64,640,163
+	color 255,255,194//3
+	boxf 0,163,640,225
+	color 194,255,194//4
+	boxf 0,225,640,350
+	color 0,0,0
+
+	sdim gpudevname,4096
+	repeat HCLGetDevCount()
+		HCLSetDev cnt
+		gpudevname+=""+cnt+" : "
+		if (HCLGetDeviceInfo_i(CL_DEVICE_TYPE,0)==2):gpudevname+="CPU : "
+		if (HCLGetDeviceInfo_i(CL_DEVICE_TYPE,0)==4):gpudevname+="GPU : "
+		gpudevname+=HCLGetDeviceInfo_s(CL_DEVICE_NAME)
+		gpudevname+=" : "+HCLGetDeviceInfo_s(CL_DEVICE_VENDOR)
+		gpudevname+="\n"
+	loop
+	
+	pos 0,0
+	mes "1. Select device"
+	objsize 440,32
+	combox deviceno,100,gpudevname
+	//mes gpudevname
+	mes
+	
+	mes "2. Select digits or Input digits"
+	sdim digitstr0,4096
+	digitstr0="1000000\n100000000\n500000000\n1000000000\n1500000000\n2000000000\n10000000000\n20000000000\n32000000000\n50000000000\n100000000000\n250000000000\n500000000000\n1000000000000\n1250000000000\n2500000000000\n10000000000000\n250000000000000\n500000000000000\nInputDigits"
+	objsize 144,32
+	combox selectd,100,digitstr0
+
+	sdim digitstr1,18
+	mesbox digitstr1,192,32,1,18
+	mes
+
+	mes "3. Select precision"
+	precisionstr="105bit\n192bit"
+	combox precision,100,precisionstr
+	mes
+	
+	mes "4. Build options etc"
+	objsize 192,28
+	chkbox "-cl-denorms-are-zero",opt0
+	objsize 192,28
+	chkbox "-cl-fast-relaxed-math",opt1
+	objsize 192,28
+	chkbox "GPU 99% load (Check this if the application goes down during the calculation.)",DEBUG
+
+	pos 10,360
+	objsize 400,64
+	button goto "Start Calc",*StartCalc
+	
+	pos 390,500
+	objsize 90,32
+	button goto "work mode ->",*workmode
+	
+	repeat -1
+	wait 1000000
+	loop
+
+*workmode
+	screen 0,480,540
+	title "work mode"
+	pos 0,0
+	color 44,215,215//1
+	boxf 0,0,640,64
+	color 255,24,115//2
+	boxf 0,64,640,195
+	color 134,205,94//4
+	boxf 0,195,640,332
+	color 0,0,0
+
+	sdim gpudevname,4096
+	repeat HCLGetDevCount()
+		HCLSetDev cnt
+		gpudevname+=""+cnt+" : "
+		if (HCLGetDeviceInfo_i(CL_DEVICE_TYPE,0)==2):gpudevname+="CPU : "
+		if (HCLGetDeviceInfo_i(CL_DEVICE_TYPE,0)==4):gpudevname+="GPU : "
+		gpudevname+=HCLGetDeviceInfo_s(CL_DEVICE_NAME)
+		gpudevname+=" : "+HCLGetDeviceInfo_s(CL_DEVICE_VENDOR)
+		gpudevname+="\n"
+	loop
+	
+	pos 0,0
+	mes "1. Select device"
+	objsize 440,32
+	combox deviceno,100,gpudevname
+	mes
+	
+	mes "2. Select worklist.txt file"
+	objsize 120,28
+	button gosub "load file",*load_worklist
+
+	digitstr1=""
+	precisionstr=""
+	sdim txtstr1,1024
+	exist "work\\worklist_sample.txt"
+	if strsize!=-1{
+		pos 130,88
+		mes "worklist_sample.txt"
+		sdim txtstr1,strsize
+		bload "work\\worklist_sample.txt",txtstr1
+	}else{
+		pos 130,88
+		mes "no name"
+	}
+	gosub*chktxtstr
+
+	pos 0,200
+	mes "3. Build options etc"
+	objsize 192,28
+	chkbox "-cl-denorms-are-zero",opt0
+	objsize 192,28
+	chkbox "-cl-fast-relaxed-math",opt1
+	objsize 480,28
+	chkbox "GPU 99% load (Check this if the application goes down during the calculation.)",DEBUG
+
+	pos 10,360
+	objsize 400,64
+	button gosub "Start Calc",*workStart
+	
+	pos 380,500
+	objsize 100,32
+	button goto "<- normal mode",*normalmode
+	
+	repeat -1
+	wait 1000000
+	loop
+	
+
+
+
+*load_worklist
+	dialog "txt",16,"worklist"
+	if (stat==1){
+		worktxtname=refstr
+		color 255,24,115//2
+		boxf 0,86,640,195
+		color 0,0,0
+		pos 130,88
+		mes worktxtname
+		exist worktxtname
+		sdim txtstr1,strsize
+		bload worktxtname,txtstr1
+		gosub*chktxtstr
+	}
+	return
+*chktxtstr
+	notesel txtstr1
+	noteget digitstr1,0
+	strrep digitstr1,"digits",""
+	strrep digitstr1,"=",""
+	strrep digitstr1," ",""
+	digitstr1=str(Min64(Max64(int64(digitstr1),0),int64("999999999999999999")))
+
+	noteget precisionstr,1
+	strrep precisionstr,"precision",""
+	strrep precisionstr,"=",""
+	strrep precisionstr,"  ",""
+	strrep precisionstr," ",""
+	if (precisionstr!=""):precisionstr=strmid(precisionstr,0,1)
+	
+	pos 10,130+4
+	if digitstr1=="0":digitstr1=""
+	mes "digits="+digitstr1
+	if precisionstr=="0"{
+		mes "precision=105bit"
+	}else{
+		if precisionstr=="1"{
+			mes "precision=192bit"
+		}else{
+			mes "precision="
+		}
+	}
+	return
+
+
+
+
+
+
+
+
+
+
+
+
+
+*workStart
+	if (int64(digitstr1)>=5)&(int64(digitstr1)<=int64("999999999999999999")){
+		if (precisionstr=="0")|(precisionstr=="1"){
+			goto*workStart2
+		}
+	}
+	return
+
+*workStart2
+	precision=int(precisionstr)
+	selectd=19
+	listsize=noteinfo(0)-2
+	dim todo_stepno,listsize
+	dim todo_batchno,listsize
+	sdim todo_fname,2048,listsize
+	worknum=0
+	repeat listsize
+		noteget todo,cnt+2
+		sptn=int(strmid(todo,0,1))
+		btchn=int(strmid(todo,2,strlen(todo)))
+		fname=dir_my+"\\work\\"+sptn+"\\"+sptn+"_"+btchn+".txt"
+		todo_stepno.worknum=sptn
+		todo_batchno.worknum=btchn
+		todo_fname.worknum=fname
+		worknum++
+	loop
+	workmodeflag=1
+	
+	
+*StartCalc
+	HCLSetDev deviceno
+	gosub*BuildOptions
+	gosub*ClearScreen
+	gosub*LoadOpenCLFile
+	gosub*host_init
+	gosub*GlobalMemSet//GlobalMemory確保
+
+	if workmodeflag==0:gosub*Allloop
+	if workmodeflag==1:gosub*Batchloop
+	//gosub*OnlyBatchData
+	wait 9000000
+	end
+
+
+*Allloop
+	starttime=mygettime()
+	repeat 7
+		onetime=mygettime()
+		k_start=int64(0)
+		k_end=int64(d)
+		//0埋め
+		if (precision==0){//dboule-doubleで初期化
+			Set0memdd bigSumMem
+		}else{//ulong*3で初期化
+			Set0memUlong3 bigSumMem
+		}
+		//メイン計算
+		BatchCalc k_start,k_end,cnt,bigSumMem,smallSumMem//startからendまでの結果がbigSumMem[0]..にまとめられる
+		HCLFlush
+			repeat -1//直前のカーネルが終了したらループを抜ける
+			if HCLGetEventStatus(0)==0:break
+			wait 1
+			loop
+		//これで答えがdev_ansに蓄積する、ついでに1ループのみの数値結果がbigSumMemの最初に入る
+		AddAns cnt,bigSumMem,dev_ans
+		mes2 "Step"+cnt+" time "+(mygettime()-onetime)+"ms "
+		//一部の正解を取り出し表示
+		HCLReadBuffer bigSumMem,host_ans,8*(2+precision),0,0
+		gosub*mes_host_ans
+	loop
+
+	//答えを取り出し
+	HCLReadBuffer dev_ans,host_ans,8*(2+precision),0,0
+	mes2 "All calc time "+(mygettime()-starttime)+"ms\n"
+	gosub*mes_host_ans
+	return
+
+*Batchloop
+	lastcnt=-1
+	title ""+getpath(worktxtname,8)+""
+	//ﾌｧｲﾙをロードして計算
+	mes2 "Batch 0_0 to 6_"+(d/BATCHSIZE)+"\n"
+	repeat worknum
+		k_start=BATCHSIZE*todo_batchno.cnt
+		k_end=BATCHSIZE*(todo_batchno.cnt+1)
+		if k_start>d:continue
+		exist todo_fname.cnt
+		if strsize!=-1:continue
+		onetime=mygettime()
+		//0埋め
+		if (precision==0){//dboule-doubleで初期化
+			Set0memdd bigSumMem
+		}else{//ulong*3で初期化
+			Set0memUlong3 bigSumMem
+		}
+		HCLFlush
+		//メイン計算
+		BatchCalc k_start,k_end,todo_stepno.cnt,bigSumMem,smallSumMem//startからendまでの結果がbigSumMem[0]..にまとめられる
+		HCLFlush
+		//ここからはCPUがGPUの結果待ちになるのでCPUの適当な処理系をはさむ
+		gosub*Batchloop_cpu_task
+			repeat -1//直前のカーネルが終了したらループを抜ける
+			await 16
+			if HCLGetEventStatus(0)==0:break
+			loop
+		//1ループのみの数値結果がbigSumMemの最初に入る
+		AddAns todo_stepno.cnt,bigSumMem,dev_ans
+		calctime=mygettime()-onetime
+		lastcnt=cnt
+		//一部の正解を取り出し保存
+		HCLReadBuffer bigSumMem,host_ans,8*(2+precision),0,0
+		gosub*fsave//host_ansを文字列に変換してセーブ
+	loop
+
+	gosub*Batchloop_cpu_task
+	mes2 "end"
+	wait 100
+	end
+	return
+
+*Batchloop_cpu_task
+	await 1
+	if (lastcnt!=-1){
+		mes2 ""+todo_stepno.lastcnt+"_"+todo_batchno.lastcnt+" : time="+calctime+"ms\n"
+		gosub*mes_host_ans
+	}
+	return
+
+*mes_host_ans
+	if (precision==0){
+		mes2 hexadecimal_dd(host_ans)+"\n"
+	}
+	if (precision==1){
+		tmp=host_ans.2
+		host_ans.2=host_ans.0
+		host_ans.0=tmp
+		mes2 hexadecimal_i32(host_ans)+"\n"
+	}
+	return
+
+
+
+
+*host_init
+	//bellardの1024に合わせる
+	d=(needD*int64(2))/int64(5)
+	if (d*int64(10)+6)/int64(2)>needD*2:d--
+	mes2 "digits="+int64(0.25*(d*10+6)+1.0)+"\n"
+	mes2 "loopnum="+d+"\n"
+	//結果がはいるhost変数
+	if (precision==0){//dd精度なら
+		ddim host_ans,2
+	}else{//ulong*3精度なら
+		dim_i64 host_ans,3
+	}
+	return
+
+
+
+
+*LoadOpenCLFile
+	chdir dir_my
+	exist "Bellard.cl"
+	if strsize!=-1{
+		prg=HCLCreateProgram("Bellard.cl",option)
+	}else{
+		prg=HCLCreateProgram("../Bellard.cl",option)
+	}
+	
+	if (precision==0){
+		krnSglobal32=HCLCreateKernel(prg,"Sglobal32mtg")
+		krnSglobal64=HCLCreateKernel(prg,"Sglobal64mtg")
+		krnSglobalafter=HCLCreateKernel(prg,"Sglobal_after")
+		krnSsum=HCLCreateKernel(prg,"Ssum")
+		krnSum7=HCLCreateKernel(prg,"Sum7")
+	}else{
+		krnSglobal32=HCLCreateKernel(prg,"Sglobal32mtg_192")
+		krnSglobal64=HCLCreateKernel(prg,"Sglobal64mtg_192")
+		krnSglobalafter=HCLCreateKernel(prg,"Sglobal_after_192")
+		krnSsum=HCLCreateKernel(prg,"Ssum_192")
+		krnSum7=HCLCreateKernel(prg,"Sum7_192")
+	}
+	krnFill8=HCLCreateKernel(prg,"FillBuffer8")
+	return
+
+*GlobalMemSet
+	bigSumMem=HCLCreateBuffer(BIGSUM_SIZE*8*(2+precision))//結果はいるデバイスメモリ
+	smallSumMem=HCLCreateBuffer(BIGSUM_SIZE/256*8*(2+precision))//結果はいるデバイスメモリ
+	dev_ans=HCLCreateBuffer(8*(2+precision))//7つの式の合計をためる
+	//0初期化
+	if (precision==0){//dd精度なら
+		HCLSetKrns krnFill8,dev_ans,0.0,0
+		HCLDoKrn1 krnFill8,2,2
+	}else{//ulong*3精度なら
+		HCLSetKrns krnFill8,dev_ans,int64(0),0
+		HCLDoKrn1 krnFill8,3,3
+	}
+	return
+
+
+
+*BuildOptions
+	if selectd==0:needD=int64("1000000")
+	if selectd==1:needD=int64("100000000")
+	if selectd==2:needD=int64("500000000")
+	if selectd==3:needD=int64("1000000000")
+	if selectd==4:needD=int64("1500000000")
+	if selectd==5:needD=int64("2000000000")
+	if selectd==6:needD=int64("10000000000")
+	if selectd==7:needD=int64("20000000000")
+	if selectd==8:needD=int64("32000000000")
+	if selectd==9:needD=int64("50000000000")
+	if selectd==10:needD=int64("100000000000")
+	if selectd==11:needD=int64("250000000000")
+	if selectd==12:needD=int64("500000000000")
+	if selectd==13:needD=int64("1000000000000")
+	if selectd==14:needD=int64("1250000000000")
+	if selectd==15:needD=int64("2500000000000")
+	if selectd==16:needD=int64("10000000000000")
+	if selectd==17:needD=int64("250000000000000")
+	if selectd==18:needD=int64("500000000000000")
+	if selectd==19{
+		strrep digitstr1,",",""
+		strrep digitstr1," ",""
+		strrep digitstr1,"-",""
+		strrep digitstr1,"\n",""
+		needD=int64(digitstr1)
+		if needD<=int64(4):dialog "invalid digits",0:end
+		if needD>int64("999999999999999999"):dialog "invalid digits",0:end
+	}
+	
+	option=""
+	if opt0:option+=" -cl-denorms-are-zero"//ほとんど速くならず。全部のデバイスで大丈夫そう
+	if opt1:option+=" -cl-fast-relaxed-math"//少し速くなる。NVIDIAのみ大丈夫そう
+	//Intel GPUのときだけ必要なおまじない
+	vendorstr=HCLGetDeviceInfo_s(CL_DEVICE_VENDOR)
+	if instr(vendorstr,0,"Intel")!=-1{
+		if HCLGetDeviceInfo_i(CL_DEVICE_TYPE,0)==4:option+=" -D IntelGPU"
+	}
+	return
+
+
+*ClearScreen
+	screen 0,480,540
+	//clrobj
+	color 255,255,255:boxf
+	color 0,0,0
+	pos 0,0
+	setmesbox
+	mes2 ""+HCLGetDeviceInfo_s(CL_DEVICE_NAME)+"\n"
+	return
+
+
+
+
+
+
+
+
+*fsave
+	sdim filestr,2048
+	filestr=""
+	if (precision==0){
+		filestr+=hexadecimal_dd(host_ans)+"\n"
+	}
+	if (precision==1){
+		filestr+=hexadecimal_i32(host_ans)+"\n"
+	}
+
+	filestr+=""+deviceno+"\t"+HCLGetDeviceInfo_s(CL_DEVICE_NAME)+"\n"
+	filestr+=""+onetime+"ms"
+	
+	sptn=todo_stepno.cnt
+	btchn=todo_batchno.cnt
+	fname=dir_my+"\\work\\"+sptn+"\\"+sptn+"_"+btchn+".txt"
+	bsave fname,filestr,strlen(filestr)
+	return
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+
+
+
+*OnlyBatchData
+	chdir "work"
+	exit_signal_name=HCLGetDeviceInfo_s(CL_DEVICE_NAME)//この名前のファイルがあると自分のプログラムが安全に終了する
+	strrep exit_signal_name," ",""
+	//CPU変数関連
+	loopinum=int((d+BATCHSIZE-1)/BATCHSIZE)
+	if revflag{
+		maxfile_no=loopinum*1
+	}else{
+		maxfile_no=0
+	}
+	return
+
+//2^??刻み
+*loadfile
+	wait 1
+	title "no_name"
+	wait 1
+	//終了条件分岐
+	exist exit_signal_name
+	if strsize!=-1:delete exit_signal_name:end
+	//ロードファイル
+	flag=0
+	loopcnt=0
+	batchno=0
+	exist_count=0
+	
+	sdim fname,256
+		repeat 7
+		if revflag{
+			ccnt=6-cnt
+		}else{
+			ccnt=cnt
+		}
+			repeat loopinum
+			if revflag{
+				rcnt=loopinum-1-cnt
+				if maxfile_no<ccnt*loopinum+rcnt:continue
+			}else{
+				rcnt=cnt
+				if maxfile_no>ccnt*loopinum+rcnt:continue
+			}
+			fname=""+ccnt+"_"+rcnt+""
+			exist ""+ccnt+"\\"+fname+"":exist_count++
+			maxfile_no=ccnt*loopinum+rcnt
+			if strsize==-1{
+				flag=1
+				loopcnt=ccnt
+				batchno=rcnt
+				break
+			}
+			loop
+		if flag==1:break
+		loop
+	//俺が使うよと
+	if (flag==1){
+		bsave ""+loopcnt+"\\"+loopcnt+"_"+batchno+"",flag
+		title ""+loopcnt+"_"+batchno+"//"+exist_count+""
+	}
+	return
+
+
+*drawtime
+	color 255,255,255
+	boxf 0,200,640,300
+	color 0,0,0
+	pos 0,200
+	mes "Batch time="+(endtime-starttime)
+	redraw 1
+	redraw 0
+	return
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+#module
+
+#defcfunc mygettime
+	return gettime(4)*3600000+gettime(5)*60000+gettime(6)*1000+gettime(7)
+
+#deffunc setmesbox
+	sdim output,65536
+	mesbox output,478,538,4
+	objid=stat
+	return
+#deffunc mes2 str string
+	output+=string
+	notesel output
+	repeat 100
+		if (strlen(output)>2048){
+			notedel 0
+		}else{
+			break
+		}
+	loop
+	objprm objid,output
+	return
+#global
