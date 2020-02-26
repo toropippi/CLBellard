@@ -59,7 +59,7 @@ DEBUG=0
 	mes
 
 	mes "3. Select precision"
-	precisionstr="105bit\n192bit"
+	precisionstr="106bit\n192bit"
 	combox precision,100,precisionstr
 	mes
 	
@@ -189,7 +189,7 @@ DEBUG=0
 	if digitstr1=="0":digitstr1=""
 	mes "digits="+digitstr1
 	if precisionstr=="0"{
-		mes "precision=105bit"
+		mes "precision=106bit"
 	}else{
 		if precisionstr=="1"{
 			mes "precision=192bit"
