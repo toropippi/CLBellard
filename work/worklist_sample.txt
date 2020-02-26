@@ -1,5 +1,5 @@
 digits=2000000000
-precision=1 (0=105bit , 1=192bit)
+precision=1 (0=106bit , 1=192bit)
 0_0
 1_0
 2_0
