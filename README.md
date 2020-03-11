@@ -7,7 +7,7 @@ Calculate pi on one device.
 Calculate pi on multiple devices. To distribute the load, you need to create a job list in advance. Please refer to worklist_sample.txt.
 After the calculation is completed, execute workmodeSum0_6.exe.
 
-#Build options
+# Build options
 ## -cl-denorms-are-zero
 This option controls how single precision and double precision denormalized numbers are handled. If specified as a build option, the single precision denormalized numbers may be flushed to zero and if the optional extension for double precision is supported, double precision denormalized numbers may also be flushed to zero. This is intended to be a performance hint and the OpenCL compiler can choose not to flush denorms to zero if the device supports single precision (or double precision) denormalized numbers.
 In my environment, it contributed to 0-1% speedup, and there was no decrease in calculation precision.
