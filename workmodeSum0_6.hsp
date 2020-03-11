@@ -20,7 +20,7 @@ repeat 7
 		noteget data,0
 		repeat 48
 			moji=peek(data,47-cnt)-48
-			if moji>10:moji-=7
+			if moji>10:moji-=39
 			sumdata.(47-cnt)+=moji
 			if (sumdata.(47-cnt)>=16){
 				sumdata.(47-cnt)-=16
@@ -43,7 +43,7 @@ sdim s,1
 sdim outstr,48
 repeat 48
 	moji=sumdata.cnt
-	if moji>=10:moji+=7
+	if moji>=10:moji+=39
 	poke s,0,moji+48
 	outstr+=s
 loop

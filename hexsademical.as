@@ -111,7 +111,7 @@
 		outstr+=str(b)
 	}else{
 		sdim s,1
-		poke s,0,65-10+b
+		poke s,0,97-10+b
 		outstr+=s
 	}
 
@@ -120,7 +120,7 @@
 		outstr+=str(b)
 	}else{
 		sdim s,1
-		poke s,0,65-10+b
+		poke s,0,97-10+b
 		outstr+=s
 	}
 	loop

@@ -1,10 +1,11 @@
-//BBP系公式のBellardの公式で任意の円周率の16進数の数値を求める。擬似四倍精度バージョン、精度保証なし
-//分子numer,分母denom
+//BBP系公式のBellardの公式で任意の円周率の16進数の数値を求める。
+//擬似四倍精度106bitバージョンと擬似四倍精度2つ使った192bitバージョンがあり
+//work modeはBATCHSIZE区切りで一部を計算して保存、最後に合計して数値を求める
+
 #const global BIGSUM_SIZE 65536//ここを変更するならkernelも変えないといけない
 #const global LOCAL_WORK_SIZE 256//ここを変更するならkernelも変えないといけない
 #const global GLOBAL_WORK_SIZE BIGSUM_SIZE*LOCAL_WORK_SIZE
 DEBUG=0
-
 
 #include "HSPCL64.as"
 #include "hexsademical.as"
@@ -64,12 +65,12 @@ DEBUG=0
 	mes
 	
 	mes "4. Build options etc"
-	objsize 192,28
+	objsize 160,28
 	chkbox "-cl-denorms-are-zero",opt0
-	objsize 192,28
+	objsize 160,28
 	chkbox "-cl-fast-relaxed-math",opt1
-	objsize 192,28
-	chkbox "GPU 99% load (Check this if the application goes down during the calculation.)",DEBUG
+	objsize 432,28
+	chkbox "GPU 99% load (Check this if the application goes down during the calculation)",DEBUG
 
 	pos 10,360
 	objsize 400,64
@@ -239,8 +240,7 @@ DEBUG=0
 		worknum++
 	loop
 	workmodeflag=1
-	
-	
+
 *StartCalc
 	HCLSetDev deviceno
 	gosub*BuildOptions
@@ -286,6 +286,7 @@ DEBUG=0
 	//答えを取り出し
 	HCLReadBuffer dev_ans,host_ans,8*(2+precision),0,0
 	mes2 "All calc time "+(mygettime()-starttime)+"ms\n"
+	mes2 "PI value output -> "
 	gosub*mes_host_ans
 	return
 
@@ -321,9 +322,10 @@ DEBUG=0
 		AddAns todo_stepno.cnt,bigSumMem,dev_ans
 		calctime=mygettime()-onetime
 		lastcnt=cnt
-		//一部の正解を取り出し保存
+		//一部の正解を取り出し
 		HCLReadBuffer bigSumMem,host_ans,8*(2+precision),0,0
-		gosub*fsave//host_ansを文字列に変換してセーブ
+		//host_ansを文字列に変換してセーブ
+		fsave host_ans,calctime,precision,todo_stepno.cnt,todo_batchno.cnt
 	loop
 
 	gosub*Batchloop_cpu_task
@@ -354,13 +356,8 @@ DEBUG=0
 	return
 
 
-
-
 *host_init
-	//bellardの1024に合わせる
-	d=(needD*int64(2))/int64(5)
-	if (d*int64(10)+6)/int64(2)>needD*2:d--
-	mes2 "digits="+int64(0.25*(d*10+6)+1.0)+"\n"
+	mes2 "digits="+needD+"\n"
 	mes2 "loopnum="+d+"\n"
 	//結果がはいるhost変数
 	if (precision==0){//dd精度なら
@@ -369,8 +366,6 @@ DEBUG=0
 		dim_i64 host_ans,3
 	}
 	return
-
-
 
 
 *LoadOpenCLFile
@@ -413,7 +408,6 @@ DEBUG=0
 	return
 
 
-
 *BuildOptions
 	if selectd==0:needD=int64("1000000")
 	if selectd==1:needD=int64("100000000")
@@ -452,142 +446,26 @@ DEBUG=0
 	if instr(vendorstr,0,"Intel")!=-1{
 		if HCLGetDeviceInfo_i(CL_DEVICE_TYPE,0)==4:option+=" -D IntelGPU"
 	}
-	return
 
+	
+	//計算途中で分母が2^53を超えるなら-D OVERDOUBLEのビルドオプションを追加
+	d=((needD-1)*2-3)/5
+	if d\2==0:d--
+	needD=(d*5+3)/2+1//dが小数になると嫌なのでneedDを修正
+	//本当は動的にカーネルを切り替えたい。今後実装予定
+	if (d*10+9>=int64(9007199254740992)){
+		option+=" -D OVERDOUBLE"
+	}
+	return
 
 *ClearScreen
 	screen 0,480,540
-	//clrobj
 	color 255,255,255:boxf
 	color 0,0,0
 	pos 0,0
 	setmesbox
 	mes2 ""+HCLGetDeviceInfo_s(CL_DEVICE_NAME)+"\n"
 	return
-
-
-
-
-
-
-
-
-*fsave
-	sdim filestr,2048
-	filestr=""
-	if (precision==0){
-		filestr+=hexadecimal_dd(host_ans)+"\n"
-	}
-	if (precision==1){
-		dim_i64 ltmp,3
-		ltmp.0=host_ans.2
-		ltmp.1=host_ans.1
-		ltmp.2=host_ans.0
-		filestr+=hexadecimal_i32(ltmp)+"\n"
-	}
-
-	filestr+=""+deviceno+"\t"+HCLGetDeviceInfo_s(CL_DEVICE_NAME)+"\n"
-	filestr+=""+onetime+"ms"
-	
-	sptn=todo_stepno.cnt
-	btchn=todo_batchno.cnt
-	fname=dir_my+"\\work\\"+sptn+"\\"+sptn+"_"+btchn+".txt"
-	bsave fname,filestr,strlen(filestr)
-	return
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-
-
-
-*OnlyBatchData
-	chdir "work"
-	exit_signal_name=HCLGetDeviceInfo_s(CL_DEVICE_NAME)//この名前のファイルがあると自分のプログラムが安全に終了する
-	strrep exit_signal_name," ",""
-	//CPU変数関連
-	loopinum=int((d+BATCHSIZE-1)/BATCHSIZE)
-	if revflag{
-		maxfile_no=loopinum*1
-	}else{
-		maxfile_no=0
-	}
-	return
-
-//2^??刻み
-*loadfile
-	wait 1
-	title "no_name"
-	wait 1
-	//終了条件分岐
-	exist exit_signal_name
-	if strsize!=-1:delete exit_signal_name:end
-	//ロードファイル
-	flag=0
-	loopcnt=0
-	batchno=0
-	exist_count=0
-	
-	sdim fname,256
-		repeat 7
-		if revflag{
-			ccnt=6-cnt
-		}else{
-			ccnt=cnt
-		}
-			repeat loopinum
-			if revflag{
-				rcnt=loopinum-1-cnt
-				if maxfile_no<ccnt*loopinum+rcnt:continue
-			}else{
-				rcnt=cnt
-				if maxfile_no>ccnt*loopinum+rcnt:continue
-			}
-			fname=""+ccnt+"_"+rcnt+""
-			exist ""+ccnt+"\\"+fname+"":exist_count++
-			maxfile_no=ccnt*loopinum+rcnt
-			if strsize==-1{
-				flag=1
-				loopcnt=ccnt
-				batchno=rcnt
-				break
-			}
-			loop
-		if flag==1:break
-		loop
-	//俺が使うよと
-	if (flag==1){
-		bsave ""+loopcnt+"\\"+loopcnt+"_"+batchno+"",flag
-		title ""+loopcnt+"_"+batchno+"//"+exist_count+""
-	}
-	return
-
-
-*drawtime
-	color 255,255,255
-	boxf 0,200,640,300
-	color 0,0,0
-	pos 0,200
-	mes "Batch time="+(endtime-starttime)
-	redraw 1
-	redraw 0
-	return
-*/
-
-
-
-
-
-
 
 
 
@@ -615,5 +493,26 @@ DEBUG=0
 		}
 	loop
 	objprm objid,output
+	return
+
+#deffunc fsave array host_ans,int calctime,int precision,int stepno,int batchno
+	sdim filestr,2048
+	filestr=""
+	if (precision==0){
+		filestr+=hexadecimal_dd(host_ans)+"\n"
+	}
+	if (precision==1){
+		dim_i64 ltmp,3
+		ltmp.0=host_ans.2
+		ltmp.1=host_ans.1
+		ltmp.2=host_ans.0
+		filestr+=hexadecimal_i32(ltmp)+"\n"
+	}
+
+	filestr+=""+deviceno@+"\t"+HCLGetDeviceInfo_s(CL_DEVICE_NAME)+"\n"
+	filestr+=""+calctime+"ms"
+
+	fname=dir_my@+"\\work\\"+stepno+"\\"+stepno+"_"+batchno+".txt"
+	bsave fname,filestr,strlen(filestr)
 	return
 #global

@@ -436,10 +436,9 @@ uint MR32(uint xlo,uint xhi,uint inv,uint c)
 
 //a=1024のn乗MOD c、モンゴメリ乗算32bit、最適化
 uint ExpMod32v4(ulong n,uint c,uint inv,uint R2){
-	uint a=1024;
+	//uint a=1024;
 	uint p=MR32(R2<<10,R2>>22,inv,c);
 	uint x=MR32(R2,0,inv,c);
-	uint xphi;
 	for(int i=0;i<64;i++){
 		if (n%(ulong)2==(ulong)1){
 			x=MR32(x*p,mul_hi(x,p),inv,c);
@@ -474,7 +473,6 @@ ulong ExpMod64v4(ulong n,ulong c,ulong inv,ulong R2){
 	ulong a=1024;
 	ulong p=MR64(R2<<(ulong)10,R2>>(ulong)54,inv,c);
 	ulong x=MR64(R2,0,inv,c);
-	ulong xphi;
 	for(int i=0;i<64;i++){
 		if (n%(ulong)2==(ulong)1){
 			x=MR64(x*p,mul_hi(x,p),inv,c);
@@ -985,6 +983,7 @@ __kernel void Sglobal64mtg(__global double2 *BigSUM,ulong offset,ulong d,ulong k
 	double2 d2tmp;
 	double2 d2dnm;
 	double2 d2nmr;
+	double2 rdeno;
 	ulong dnminv;
 	ulong R2;
 	ulong log2c;
@@ -1198,7 +1197,7 @@ __kernel void Sglobal64mtg_192(__global ulong *BigSUM,ulong offset,ulong d,ulong
 //あとdouble型を超える分母でもいいように書いてある
 __kernel void Sglobal_after(__global double2 *BigSUM,ulong d,ulong nume,long numesign,ulong den0,ulong den1) {
 	ulong dnm;//分母
-	ulong nmr;//分子
+	//ulong nmr;//分子
 	double2 sum;sum.x=0;sum.y=0;
 	double2 d2tmp;
 	double2 d2dnm;
@@ -1280,21 +1279,6 @@ __kernel void Sglobal_after_192(__global ulong *BigSUM,ulong d,ulong nume,long n
 	}
 	//これでdb1==64/1024の時を計算して今db1==64
 	//今i==9
-	/*
-	nmr=64;
-	dnm=den0*(d+(ulong)i)+den1;
-	nmr%=dnm;
-	d2dnm.x=(double)dnm;
-	d2dnm.y=(double)((long)dnm-(long)d2dnm.x);
-	d2tmp=nd_div((double)nmr,d2dnm);
-	if ((d+(ulong)i)%2==1)
-	{
-		d2tmp=-d2tmp;
-	}
-	sum1=addcab(sum1,d2tmp);
-	i--;
-	//今i==8
-	*/
 	for(;i>=0;i--)
 	{
 		dnm=den0*(d+(ulong)i)+den1;
@@ -1324,13 +1308,12 @@ __kernel void Sglobal_after_192(__global ulong *BigSUM,ulong d,ulong nume,long n
 			}
 			d2tmp=nn_div((double)nmr,(double)dnm);
 		}
-
-
+		
 		if ((d+(ulong)i)%2==1)
 		{
 			d2tmp=-d2tmp;
 		}
-
+		
 		sum1=addcab(sum1,d2tmp);
 		sumfix2(&sum1);
 	}
@@ -1339,8 +1322,7 @@ __kernel void Sglobal_after_192(__global ulong *BigSUM,ulong d,ulong nume,long n
 		sum0=-sum0;
 		sum1=-sum1;
 	}
-
-
+	
 	//double-doubleを2つ使ってulong3つにまとめて結果を加算して代入
 	ulong ulsum0;//最上位桁
 	ulong ulsum1;//中間
@@ -1349,11 +1331,6 @@ __kernel void Sglobal_after_192(__global ulong *BigSUM,ulong d,ulong nume,long n
 	//グローバルメモリに加算書き込み
 	Ulong3GlobalADD(ulsum0,ulsum1,ulsum2,BigSUM);
 }
-
-
-
-
-
 
 
 
@@ -1409,231 +1386,6 @@ __kernel void Ssum_192(__global ulong *BigSUM,__global ulong *SmallSUM) {
 		SmallSUM[get_group_id(0)*3+2]=ulsum2;
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-__kernel void TEST(__global double2 *buffe,__global ulong *bout)
-{
-	ulong ulsum0,ulsum1;
-	double2 d2sum0=twosum(buffe[0]);
-	//ulsum1=(ulong)(d2sum0.x*18446744073709551616.0);
-	//ulsum1+=(long)(d2sum0.y*18446744073709551616.0);
-	buffe[0]=d2sum0;
-	
-	
-	ulong ultemp;
-	double dtmp;
-	d2sum0.x*=4503599627370496.0;//2^52
-	d2sum0.y*=4503599627370496.0;//2^52
-	dtmp=trunc(d2sum0.x);//必ず切り下げ整数切り出ししないといけない
-	ulsum0=(((ulong)dtmp)*(ulong)4096);
-	d2sum0.x-=dtmp;
-	d2sum0=twosum(d2sum0);//次の52bitを切り出したい
-	
-	d2sum0.x*=4503599627370496.0;//2^52
-	if (d2sum0.x<0.0){
-		d2sum0.x+=4503599627370496.0;
-		ulsum0-=(ulong)4096;
-	}
-	ultemp=(ulong)d2sum0.x;
-	ulsum0|=ultemp>>((ulong)40);//これでulsum0は確定
-	
-	
-	bout[0]=ulsum0;
-	ulsum1=(ultemp%((ulong)1<<(ulong)40))<<((ulong)24);
-	bout[1]=ulsum1;
-	bout[2]=0;
-	
-	/*
-	//ここでいったんulsum1は保留、ulsum2を埋める。d2sum1から96bit切り出す
-	d2sum1.x*=281474976710656.0;//2^48
-	d2sum1.y*=281474976710656.0;//2^48
-	dtmp=trunc(d2sum1.x);//必ず切り下げ整数切り出ししないといけない
-	ultemp=(ulong)dtmp;
-	ulsum2=(ultemp%((ulong)1<<(ulong)16))<<((ulong)48);
-	d2sum1.x-=dtmp;
-	d2sum1=twosum(d2sum1);//次の48bitを切り出したい
-	d2sum1.x*=281474976710656.0;//2^48
-	ulsum2+=(ulong)trunc(d2sum1.x);//ここはtruncを使わないほうが正解に近いが、まだ繰り上がりしたくないのでtrunc。これでulsum2は確定
-	//ultempの48bit中上32bitが残っている
-	uint chk0=(uint)((ulsum1>>((ulong)30))%(ulong)4);//30と31bit目を切り出し
-	uint chk1=(uint)(ultemp>>((ulong)46));//46と47bit目を切り出し
-	if (chk0==chk1){//何も考えずコピーで良い
-		//ulsum1=(ulsum1&0xFFFFFFFF00000000)|(ultemp>>((ulong)16));
-	}else{
-		ulong last_ulsum1=ulsum1;
-		if (((chk0+1)%4)==chk1){//chk1が正解の数字なのでchk0側つまりulsum1とulsum0を修正しないといけない
-			ulsum1+=((ulong)1<<(ulong)30);
-			//繰り上がりあるなら
-			if (ulsum1<last_ulsum1)ulsum0++;
-			//ulsum1=(ulsum1&0xFFFFFFFF00000000)|(ultemp>>((ulong)16));
-		}
-		
-		if (((chk0-1)%4)==chk1){//chk1が正解の数字なのでchk0側つまりulsum1とulsum0を修正しないといけない
-			ulsum1-=((ulong)1<<(ulong)30);
-			//繰り下がりあるなら
-			if (ulsum1>last_ulsum1)ulsum0--;
-			//ulsum1=(ulsum1&0xFFFFFFFF00000000)|(ultemp>>((ulong)16));
-		}
-		//これ以外のパターンは想定外、一応ないと証明できている。
-	}
-	ulsum1=(ulsum1&0xFFFFFFFF00000000)|(ultemp>>((ulong)16));
-	//192bit　sumの完成!!!
-	
-	//最後に、この数値は切り下げしてしまっているので誤差が積み重なりやすい
-	if (((ulong)trunc(d2sum1.x))!=((ulong)d2sum1.x))
-	{
-		ulong last_ulsum2=ulsum2;
-		ulsum2+=1;
-		if (last_ulsum2>ulsum2){
-			ulong last_ulsum1=ulsum1;
-			ulsum1+=1;
-			if (last_ulsum1>ulsum1)ulsum0++;
-		}
-	}
-	
-	*/
-	
-	
-	
-	
-	
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1720,11 +1472,6 @@ __kernel void Sum7_192(__global ulong *dev_ans,__global ulong *BigSUM,ulong d_nu
 
 
 
-
-
-
-
-
 __kernel void FillBuffer4(__global uint *A,uint parameta,uint offset)
 {
 	A[offset+get_global_id(0)]=parameta;
@@ -1743,3 +1490,13 @@ __kernel void FillBuffer8(__global ulong *A,ulong parameta,uint offset)
 
 
 
+
+
+
+/*
+__kernel void TEST(__global double2 *buffe,__global ulong *bout)
+{
+	ulong ulsum0,ulsum1;
+	bout[2]=0;
+}
+*/
