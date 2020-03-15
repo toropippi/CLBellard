@@ -12,7 +12,7 @@ DEBUG_99LOAD=0//waitいれてGPUフリーズをさける
 #include "hexsademical.as"
 #include "KernelFuncs.as"
 	dir_my=dir_cur
-	_ExHCLSetCommandQueueProperties 2
+	//_ExHCLSetCommandQueueProperties 2
 	HCLinit
 	if HCLGetDevCount()=0:dialog "対応ビデオカードがありません。終了します",1:end
 
@@ -375,8 +375,10 @@ DEBUG_99LOAD=0//waitいれてGPUフリーズをさける
 	if strsize!=-1{
 		prg=HCLCreateProgram("Bellard.cl",option)
 	}else{
-		prg=HCLCreateProgram("../Bellard.cl",option)
+		dialog "clﾌｧｲﾙがincludeできませんでした",1
+		end
 	}
+	
 	
 	if (precision==0){
 		krnSglobal32=HCLCreateKernel(prg,"Sglobal32mtg")
@@ -454,7 +456,7 @@ DEBUG_99LOAD=0//waitいれてGPUフリーズをさける
 	if d\2==0:d--
 	needD=(d*5+3)/2+1//dが小数になると嫌なのでneedDを修正
 	//本当は動的にカーネルを切り替えたい。今後実装予定
-	if (d*10+9>=int64(9007199254740992))|DEBUG_FORCE_OVERDOUBLE{
+	if ((d*10+9>=int64(9007199254740992))|DEBUG_FORCE_OVERDOUBLE){
 		option+=" -D OVERDOUBLE"
 	}
 	return

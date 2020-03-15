@@ -239,25 +239,18 @@ ulong ABmodC64(const ulong a,const ulong b,const ulong modC)
 
 
 
-uint modinv32(const ulong m)
+uint modinv32(const uint m)
 {
-	uint NR = 0;
-	uint t = 0;
-	uint vi = 1;
-	for(int i=0;i<32;i++)
-	{
-		if ( (t & 0x00000001) == 0){
-			t += m;
-			NR += vi;
-		}
-		t >>= 1;
-		vi <<= 1;
+	uint inv=m;
+	for(int i=0;i<4;i++){
+		inv*=2-inv*m;
 	}
-	return NR;
+	return -inv;
 }
 
 ulong modinv64(const ulong m)
 {
+	/*
 	ulong NR = 0;
 	ulong t = 0;
 	ulong vi = 1;
@@ -271,6 +264,28 @@ ulong modinv64(const ulong m)
 		vi <<= 1;
 	}
 	return NR;
+	*/
+	
+	
+	//本当は下のコメントアウトしているやつにしたかったがコンパイル時間が非常に長くなったのでwhile構文つかってアンロールされないようにしている
+	ulong minv=m;
+	ulong tmp=0;
+	while((tmp & 0x00000000FFFFFFFF)!=(ulong)1){
+		tmp=minv*m;
+		minv*=(ulong)2-tmp;
+	}
+	return -minv;
+	
+	
+	/*
+	ulong minv=m;
+	ulong tmp;
+	for(int i=0;i<5;i++){
+		minv=minv*((ulong)2-minv*m);
+	}
+	return -minv;
+	*/
+	
 }
 
 
