@@ -703,7 +703,7 @@ void ulong3GlobalADD(ulong ulsum0,ulong ulsum1,ulong ulsum2,__global ulong* bigS
 
 /////////////////////////32bitバージョン　ルーチン//////////////////////
 //local_work_size=256に固定、最後にshared memoryでリダクションして結果をbigSumに格納
-__kernel void Sglobal32(__global double2 *bigSum,const ulong offset,const ulong d,const ulong k_max,const ulong nume,const long numesign,const ulong den0,const ulong den1) {
+__kernel void Sglobal32(__global double2 *bigSum,const ulong offset,const ulong d,const ulong k_max,const long numesign,const ulong den0,const ulong den1) {
 	ulong gsize=get_global_size(0);//global_work_item数
 	ulong idx = get_global_id(0);
 	ulong k=idx+offset;
@@ -737,7 +737,7 @@ __kernel void Sglobal32(__global double2 *bigSum,const ulong offset,const ulong 
 
 //メイン計算部分モンゴメリ乗算版32bit
 //local_work_size=256に固定、最後にshared memoryでリダクションして結果をbigSumに格納
-__kernel void Sglobal32mtg(__global double2 *bigSum,const ulong offset,const ulong d,const ulong k_max,const ulong nume,const long numesign,const ulong den0,const ulong den1) {
+__kernel void Sglobal32mtg(__global double2 *bigSum,const ulong offset,const ulong d,const ulong k_max,const long numesign,const ulong den0,const ulong den1) {
 	ulong gsize=get_global_size(0);//global_work_item数
 	ulong idx = get_global_id(0);
 	ulong k=idx+offset;
@@ -779,7 +779,7 @@ __kernel void Sglobal32mtg(__global double2 *bigSum,const ulong offset,const ulo
 
 //メイン計算部分モンゴメリ乗算版32bit、ulong3に結果まとめるやつ
 //local_work_size=256に固定、最後にshared memoryでリダクションして結果をbigSumに格納
-__kernel void Sglobal32mtg_192(__global ulong *bigSum,const ulong offset,const ulong d,const ulong k_max,const ulong nume,const long numesign,const ulong den0,const ulong den1) {
+__kernel void Sglobal32mtg_192(__global ulong *bigSum,const ulong offset,const ulong d,const ulong k_max,const long numesign,const ulong den0,const ulong den1) {
 	ulong gsize=get_global_size(0);
 	ulong idx = get_global_id(0);
 	ulong k=idx+offset;
@@ -874,7 +874,7 @@ __kernel void Sglobal32mtg_192(__global ulong *bigSum,const ulong offset,const u
 
 //メイン計算部分、64bit
 //local_work_size=256に固定、最後にshared memoryでリダクションして結果をbigSumに格納
-__kernel void Sglobal64(__global double2 *bigSum,const ulong offset,const ulong d,const ulong k_max,const ulong nume,const long numesign,const ulong den0,const ulong den1) {
+__kernel void Sglobal64(__global double2 *bigSum,const ulong offset,const ulong d,const ulong k_max,const long numesign,const ulong den0,const ulong den1) {
 	ulong gsize=get_global_size(0);
 	ulong idx = get_global_id(0);
 	ulong k=idx+offset;
@@ -922,7 +922,7 @@ __kernel void Sglobal64(__global double2 *bigSum,const ulong offset,const ulong 
 
 //メイン計算部分モンゴメリ乗算版64bit
 //local_work_size=256に固定、最後にshared memoryでリダクションして結果をbigSumに格納
-__kernel void Sglobal64mtg(__global double2 *bigSum,const ulong offset,const ulong d,const ulong k_max,const ulong nume,const long numesign,const ulong den0,const ulong den1) {
+__kernel void Sglobal64mtg(__global double2 *bigSum,const ulong offset,const ulong d,const ulong k_max,const long numesign,const ulong den0,const ulong den1) {
 	ulong gsize=get_global_size(0);
 	ulong idx = get_global_id(0);
 	ulong k=idx+offset;
@@ -1000,7 +1000,7 @@ __kernel void Sglobal64mtg(__global double2 *bigSum,const ulong offset,const ulo
 
 //メイン計算部分モンゴメリ乗算版64bit、2つのdouble-double(105bit*2)を64bit整数*3にまとめる
 //local_work_size=256に固定、最後にshared memoryでリダクションして結果をbigSumに格納
-__kernel void Sglobal64mtg_192(__global ulong *bigSum,const ulong offset,const ulong d,const ulong k_max,const ulong nume,const long numesign,const ulong den0,const ulong den1) {
+__kernel void Sglobal64mtg_192(__global ulong *bigSum,const ulong offset,const ulong d,const ulong k_max,const long numesign,const ulong den0,const ulong den1) {
 	ulong gsize=get_global_size(0);
 	ulong idx = get_global_id(0);
 	ulong k=idx+offset;
@@ -1126,7 +1126,7 @@ __kernel void Sglobal64mtg_192(__global ulong *bigSum,const ulong offset,const u
 //メイン計算のkループの後の数ループ分計算 double-double版
 //面倒なので1*1スレッド動作
 //あとdouble型を超える分母でもいいように書いてある
-__kernel void Sglobal_after(__global double2 *bigSum,const ulong d,const ulong nume,const long numesign,const ulong den0,const ulong den1) {
+__kernel void Sglobal_after(__global double2 *bigSum,const ulong d,const long numesign,const ulong den0,const ulong den1) {
 	ulong dnm;//分母
 	//ulong nmr;//分子
 	double2 sum=0;
@@ -1161,7 +1161,7 @@ __kernel void Sglobal_after(__global double2 *bigSum,const ulong d,const ulong n
 //192bit版
 //面倒なので1*1スレッド動作
 //あとdouble型を超える分母でもいいように書いてある
-__kernel void Sglobal_after_192(__global ulong *bigSum,const ulong d,const ulong nume,const long numesign,const ulong den0,const ulong den1) {
+__kernel void Sglobal_after_192(__global ulong *bigSum,const ulong d,const long numesign,const ulong den0,const ulong den1) {
 	ulong dnm;//分母
 	ulong nmr;//分子
 	double2 sum0=0;

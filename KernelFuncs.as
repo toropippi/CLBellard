@@ -34,7 +34,7 @@
 		repeat -1
 		if offset>=loopmax32:break
 		k_max=Min64(k_max+GLOBAL_WORK_SIZE*(16-8*DEBUG@),loopmax32)
-		HCLSetKrns krnSglobal32@,bigSumMem,offset,d@,k_max,numer.formulano,numer_sign.formulano,denom0.formulano,denom1.formulano
+		HCLSetKrns krnSglobal32@,bigSumMem,offset,d@,k_max,numer_sign.formulano,denom0.formulano,denom1.formulano
 		HCLDoKrn1 krnSglobal32@,GLOBAL_WORK_SIZE,LOCAL_WORK_SIZE
 		if DEBUG@==1:HCLFinish:await 1
 		offset=k_max
@@ -46,7 +46,7 @@
 	repeat -1
 		if offset>=loopmax64:break
 		k_max=Min64(k_max+GLOBAL_WORK_SIZE*(32-24*DEBUG@),loopmax64)
-		HCLSetKrns krnSglobal64@,bigSumMem,offset,d@,k_max,numer.formulano,numer_sign.formulano,denom0.formulano,denom1.formulano
+		HCLSetKrns krnSglobal64@,bigSumMem,offset,d@,k_max,numer_sign.formulano,denom0.formulano,denom1.formulano
 		HCLDoKrn1 krnSglobal64@,GLOBAL_WORK_SIZE,LOCAL_WORK_SIZE
 		if DEBUG@==1:HCLFinish:await 1
 		offset=k_max
@@ -54,7 +54,7 @@
 
 	//メイン計算のkループの後の数ループ分計算
 	if (offset==d@){
-		HCLSetKrns krnSglobalafter@,bigSumMem,d@,numer.formulano,numer_sign.formulano,denom0.formulano,denom1.formulano
+		HCLSetKrns krnSglobalafter@,bigSumMem,d@,numer_sign.formulano,denom0.formulano,denom1.formulano
 		HCLDoKrn1 krnSglobalafter@,1,1//余分にループまわして、その分をbigSumMem[0]に加算する
 	}
 
