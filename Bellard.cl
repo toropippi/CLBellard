@@ -250,7 +250,7 @@ uint modinv32(const uint m)
 
 ulong modinv64(const ulong m)
 {
-	/*
+#ifdef IntelGPU
 	ulong NR = 0;
 	ulong t = 0;
 	ulong vi = 1;
@@ -264,8 +264,7 @@ ulong modinv64(const ulong m)
 		vi <<= 1;
 	}
 	return NR;
-	*/
-	
+#else
 	
 	//本当は下のコメントアウトしているやつにしたかったがコンパイル時間が非常に長くなったのでwhile構文つかってアンロールされないようにしている
 	ulong minv=m;
@@ -275,7 +274,7 @@ ulong modinv64(const ulong m)
 		minv*=(ulong)2-tmp;
 	}
 	return -minv;
-	
+#endif
 	
 	/*
 	ulong minv=m;
