@@ -33,10 +33,10 @@
 	loopmax32=Min64(loopmax32,k_end)
 		repeat -1
 		if offset>=loopmax32:break
-		k_max=Min64(k_max+GLOBAL_WORK_SIZE*(16-8*DEBUG@),loopmax32)
+		k_max=Min64(k_max+GLOBAL_WORK_SIZE*(16-8*DEBUG_99LOAD@),loopmax32)
 		HCLSetKrns krnSglobal32@,bigSumMem,offset,d@,k_max,numer_sign.formulano,denom0.formulano,denom1.formulano
 		HCLDoKrn1 krnSglobal32@,GLOBAL_WORK_SIZE,LOCAL_WORK_SIZE
-		if DEBUG@==1:HCLFinish:await 1
+		if DEBUG_99LOAD@==1:HCLFinish:await 1
 		offset=k_max
 		loop
 	
@@ -45,10 +45,10 @@
 	loopmax64=Min64(k_end,d@)
 	repeat -1
 		if offset>=loopmax64:break
-		k_max=Min64(k_max+GLOBAL_WORK_SIZE*(32-24*DEBUG@),loopmax64)
+		k_max=Min64(k_max+GLOBAL_WORK_SIZE*(32-24*DEBUG_99LOAD@),loopmax64)
 		HCLSetKrns krnSglobal64@,bigSumMem,offset,d@,k_max,numer_sign.formulano,denom0.formulano,denom1.formulano
 		HCLDoKrn1 krnSglobal64@,GLOBAL_WORK_SIZE,LOCAL_WORK_SIZE
-		if DEBUG@==1:HCLFinish:await 1
+		if DEBUG_99LOAD@==1:HCLFinish:await 1
 		offset=k_max
 	loop
 
