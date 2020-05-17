@@ -374,12 +374,13 @@ DEBUG_99LOAD=0//waitいれてGPUフリーズをさける
 	exist "Bellard.cl"
 	if strsize!=-1{
 		prg=HCLCreateProgram("Bellard.cl",option)
+		prg2=HCLCreateProgram("Bellard_div2by1.cl",option)
 	}else{
 		dialog "clﾌｧｲﾙがincludeできませんでした",1
 		end
 	}
 	
-	
+	//Bellard.clのほう
 	if (precision==0){
 		krnSglobal32=HCLCreateKernel(prg,"Sglobal32mtg")
 		krnSglobal64=HCLCreateKernel(prg,"Sglobal64mtg")
@@ -394,6 +395,9 @@ DEBUG_99LOAD=0//waitいれてGPUフリーズをさける
 		krnSum7=HCLCreateKernel(prg,"Sum7_192")
 	}
 	krnFill8=HCLCreateKernel(prg,"FillBuffer8")
+	
+	//Bellard_div2by1.clのほう
+	//krnSglobal64=HCLCreateKernel(prg2,"Sglobal64mtg_192_Refresh")
 	return
 
 *GlobalMemSet
@@ -445,9 +449,13 @@ DEBUG_99LOAD=0//waitいれてGPUフリーズをさける
 	if opt0:option+=" -cl-denorms-are-zero"//ほとんど速くならず。全部のデバイスで大丈夫そう
 	if opt1:option+=" -cl-fast-relaxed-math"//少し速くなる。NVIDIAのみ大丈夫そう
 	//Intel GPUのときだけ必要なおまじない
-	vendorstr=HCLGetDeviceInfo_s(CL_DEVICE_VENDOR)
+	vendorstr=HCLGetDeviceInfo_s(CL_DEVICE_TYPE)
 	if instr(vendorstr,0,"Intel")!=-1{
 		if HCLGetDeviceInfo_i(CL_DEVICE_TYPE,0)==4:option+=" -D IntelGPU"
+	}
+	//CPUのときだけ必要なおまじない
+	if HCLGetDeviceInfo_i(CL_DEVICE_VENDOR)==2{
+			option+=" -D CPU"
 	}
 
 	

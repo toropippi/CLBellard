@@ -1,5 +1,3 @@
-//#pragma OPENCL EXTENSION cl_khr_fp64 : enable
-//#pragma OPENCL EXTENSION cl_khr_int64_base_atomics : enable
 double2 twosum(const double2 a)
 {
 	double x = (a.x + a.y);
@@ -109,54 +107,6 @@ double2 nn_div(const double x,const double y)
 
 
 
-/*
-//dd x :log 2底のxを返す
-double2 dd_log2(const ulong ulx,__global const double2 *revarray)
-{
-	double dx=(double)ulx;
-	int iexp;
-	double dxc=frexp(dx, &iexp);
-	if (dxc<0.666)
-	{
-		dxc*=2.0;
-		iexp--;
-	}
-
-	//これのlogをマクローリン展開の形から計算する
-	double xb = dxc-1.0;
-	double2 outx;
-	outx.x=0;outx.y=0;
-
-	//ループ回数を計算
-	float xbhi=fanmr((float)xb);
-	if (xbhi<0.001f)
-	  xbhi=0.001f;
-	int n=(int)(-(107.0f*0.693147180559945309417232f)/log(xbhi))+3;
-	if (n<2)
-	  n=2;
-
-	for(int i=n;i>=0;i--){
-		outx = subcab(revarray[i],outx);
-		outx = dnmulcab(outx,xb);
-	}
-	double2 log2e;
-	log2e.x=12994641697113596.0/9007199254740992.0;
-	log2e.y=1651415998432073.0/9007199254740992.0/9007199254740992.0;
-	outx = ddmulcab(outx,log2e);
-	double2 ddmpt;ddmpt.x=(double)iexp;ddmpt.y=0;
-	outx = addcab(outx,ddmpt);//outx+=dd((double)keta,0);
-	return outx;
-}
-*/
-
-
-
-
-
-
-
-
-
 
 
 
@@ -241,11 +191,29 @@ ulong ABmodC64(const ulong a,const ulong b,const ulong modC)
 
 uint modinv32(const uint m)
 {
+/*
+#ifdef CPU
+	uint NR = 0;
+	uint t = 0;
+	uint vi = 1;
+	for(int i=0;i<32;i++)
+	{
+		if ( (t & 0x00000001) == 0){
+			t += m;
+			NR += vi;
+		}
+		t >>= 1;
+		vi <<= 1;
+	}
+	return NR;
+#else
+*/
 	uint inv=m;
 	for(int i=0;i<4;i++){
 		inv*=2-inv*m;
 	}
 	return -inv;
+//#endif
 }
 
 ulong modinv64(const ulong m)
@@ -405,6 +373,9 @@ ulong ExpMod64v3(ulong n,const ulong modC,const ulong rmodC,const ulong log2modC
 
 
 
+
+
+
 //モンゴメリリダクション32bit版
 uint MR32(const uint xlo,const uint xhi,const uint inv,const uint modC)
 {
@@ -438,6 +409,10 @@ uint ExpMod32v4(ulong n,const uint modC,const uint inv,const uint r2){
 
 
 
+
+
+
+
 //モンゴメリリダクション
 ulong MR64(const ulong xlo,const ulong xhi,const ulong inv,const ulong modC)
 {
@@ -463,6 +438,7 @@ ulong ExpMod64v4(ulong n,const ulong modC,const ulong inv,const ulong r2){
 		if (n%(ulong)2==(ulong)1){
 			x=MR64(x*p,mul_hi(x,p),inv,modC);
 		}
+		
 		p=MR64(p*p,mul_hi(p,p),inv,modC);
 		n/=(ulong)2;
 		if (n==(ulong)0)break;
