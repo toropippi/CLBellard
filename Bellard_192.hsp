@@ -374,7 +374,7 @@ DEBUG_99LOAD=0//wait‚¢‚ê‚ÄGPUƒtƒŠ[ƒY‚ğ‚³‚¯‚é
 	exist "Bellard.cl"
 	if strsize!=-1{
 		prg=HCLCreateProgram("Bellard.cl",option)
-		prg2=HCLCreateProgram("Bellard_div2by1.cl",option)
+		//prg2=HCLCreateProgram("Bellard_div2by1.cl",option)
 	}else{
 		dialog "clÌ§²Ù‚ªinclude‚Å‚«‚Ü‚¹‚ñ‚Å‚µ‚½",1
 		end
