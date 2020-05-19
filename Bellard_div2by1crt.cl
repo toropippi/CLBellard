@@ -494,6 +494,13 @@ uint2 uladd(uint2 a,uint2 b){
 	a.y+=b.y;
 	return a;
 }
+//単純な引き算、オーバーフロー考慮なし
+uint2 ulsub(uint2 a,uint2 b){
+	if (a.x<b.x)a.y--;
+	a.x-=b.x;
+	a.y-=b.y;
+	return a;
+}
 
 
 //足し算、オーバーフロー考慮あり
@@ -511,13 +518,25 @@ uint3 uladdofw(uint2 a,uint2 b){
 	return outd;
 }
 
+uint2 ultou2(ulong a){
+	uint2 outd;
+	outd.x=a%(1UL<<32UL);
+	outd.y=a/(1UL<<32UL);
+	return outd;
+}
+ulong u2toul(uint2 a){
+	uint2 outd;
+	return (ulong)a.x+(ulong)a.y*(1UL<<32UL);
+}
+
 
 
 /* Algorithm 2 from Mﾃｶller and Granlund
    "Improved division by invariant integers". */
 ulong reciprocal_word(ulong d)
 {
-        ulong d0, d9, d40, d63, v0, v1, v2, ehat, v3, v4, hi, lo;
+        ulong d0, d9, d40, d63, v0, v1, v2, ehat, v3, hi, lo;
+		uint2 v4;
         const uint table[] = {
         /* Generated with:
            for (int i = (1 << 8); i < (1 << 9); i++)
@@ -564,8 +583,11 @@ ulong reciprocal_word(ulong d)
         ehat = shr(v2,1) * d0 - mymullo128(v2, d63);
         v3 = shl(v2,31) + shr(mymulhi128(v2, ehat),1);
         mymul128(v3, d, &hi, &lo);
-        v4 = v3 - (hi + d + (lo + d < lo));
-        return v4;
+		
+		uint3 out3=uladdofw(ultou2(lo),ultou2(d));
+		
+        v4 = ulsub(ultou2(v3) , uladd(uladd(ultou2(hi),ultou2(d)),(uint2){out3.z,0}));
+        return u2toul(v4);
 }
 
 /* Algorithm 4 from Mﾃｶller and Granlund
