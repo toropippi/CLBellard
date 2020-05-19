@@ -263,6 +263,291 @@ ulong mymullo128(ulong a,ulong b){
 
 
 
+///////////////////////////////////uint2バージョン
+uint4 u2mymul128(uint2 a,uint2 b){
+	uint a32=a.y;
+	uint a10=a.x;
+	uint b32=b.y;
+	uint b10=b.x;
+	
+	uint2 u2a10,u2a32;
+	u2a32.y=a32/65536;
+	u2a32.x=a32%65536;
+	u2a10.y=a10/65536;
+	u2a10.x=a10%65536;
+	
+	uint2 u2b10,u2b32;
+	u2b32.y=b32/65536;
+	u2b32.x=b32%65536;
+	u2b10.y=b10/65536;
+	u2b10.x=b10%65536;
+	
+	uint C1,C0,C3,C2,C4,C5;
+	uint plmflg=0;//プラスマイナスフラグ
+	
+	uint2 u2out;
+	u2out=mymul64(u2a10,u2b10);
+	C1=u2out.y;
+	C0=u2out.x;
+	u2out=mymul64(u2a32,u2b32);
+	C3=u2out.y;
+	C2=u2out.x;
+	
+	
+	
+	if (a32<a10){
+		a32=a10-a32;
+		plmflg++;
+	}else{
+		a32-=a10;
+	}
+	
+	if (b32<b10){
+		b32=b10-b32;
+		plmflg++;
+	}else{
+		b32-=b10;
+	}
+	
+	
+	uint2 u2ina;u2ina.y=a32/65536;u2ina.x=a32%65536;
+	uint2 u2inb;u2inb.y=b32/65536;u2inb.x=b32%65536;
+	u2out=mymul64(u2ina,u2inb);
+	C5=u2out.y;
+	C4=u2out.x;
+	
+	uint flg=0;//下のほうで使う繰り上がりフラグ
+	if (plmflg%2==0){//最後にC3から1引かないといけない
+		C4=~C4;
+		C5=~C5;
+		C4+=1;
+		flg=(C4==0);
+	}
+	
+	
+	uint tmp;
+	
+	tmp=C4;
+	C4+=C1;
+	if (C4<tmp)flg++;
+	tmp=C4;
+	
+	C4+=C0;
+	if (C4<tmp)flg++;
+	tmp=C4;
+	
+	C4+=C2;
+	if (C4<tmp)flg++;
+	//tmp=C1;
+	
+	tmp=C5+flg;
+	flg=0;
+	if (tmp<C5)flg++;
+	C5=tmp;
+	C5+=C2;
+	if (C5<tmp)flg++;
+	tmp=C5;
+	
+	C5+=C1;
+	if (C5<tmp)flg++;
+	tmp=C5;
+	
+	C5+=C3;
+	if (C5<tmp)flg++;
+	//tmp=C5;
+	
+	C3+=flg;
+	C3-=(plmflg%2==0);
+	
+	uint4 out4;
+	out4.x=C0;
+	out4.y=C4;
+	out4.z=C5;
+	out4.w=C3;
+	return out4;
+}
+
+
+uint2 u2mymulhi128(uint2 a,uint2 b){
+	uint a32=a.y;
+	uint a10=a.x;
+	uint b32=b.y;
+	uint b10=b.x;
+	
+	uint2 u2a10,u2a32;
+	u2a32.y=a32/65536;
+	u2a32.x=a32%65536;
+	u2a10.y=a10/65536;
+	u2a10.x=a10%65536;
+	
+	uint2 u2b10,u2b32;
+	u2b32.y=b32/65536;
+	u2b32.x=b32%65536;
+	u2b10.y=b10/65536;
+	u2b10.x=b10%65536;
+	
+	uint C1,C0,C3,C2,C4,C5;
+	uint plmflg=0;//プラスマイナスフラグ
+	
+	uint2 u2out;
+	u2out=mymul64(u2a10,u2b10);
+	C1=u2out.y;
+	C0=u2out.x;
+	u2out=mymul64(u2a32,u2b32);
+	C3=u2out.y;
+	C2=u2out.x;
+	
+	
+	if (a32<a10){
+		a32=a10-a32;
+		plmflg++;
+	}else{
+		a32-=a10;
+	}
+	
+	if (b32<b10){
+		b32=b10-b32;
+		plmflg++;
+	}else{
+		b32-=b10;
+	}
+	
+	uint2 u2ina;u2ina.y=a32/65536;u2ina.x=a32%65536;
+	uint2 u2inb;u2inb.y=b32/65536;u2inb.x=b32%65536;
+	u2out=mymul64(u2ina,u2inb);
+	C5=u2out.y;
+	C4=u2out.x;
+	
+	uint flg=0;//下のほうで使う繰り上がりフラグ
+	if (plmflg%2==0){//最後にC3から1引かないといけない
+		C4=~C4;
+		C5=~C5;
+		C4+=1;
+		flg=(C4==0);
+	}
+	
+	uint tmp;
+	
+	tmp=C4;
+	C4+=C1;
+	if (C4<tmp)flg++;
+	tmp=C4;
+	
+	C4+=C0;
+	if (C4<tmp)flg++;
+	tmp=C4;
+	
+	C4+=C2;
+	if (C4<tmp)flg++;
+	//tmp=C1;
+	
+	tmp=C5+flg;
+	flg=0;
+	if (tmp<C5)flg++;
+	C5=tmp;
+	C5+=C2;
+	if (C5<tmp)flg++;
+	tmp=C5;
+	
+	C5+=C1;
+	if (C5<tmp)flg++;
+	tmp=C5;
+	
+	C5+=C3;
+	if (C5<tmp)flg++;
+	//tmp=C5;
+	
+	C3+=flg;
+	C3-=(plmflg%2==0);
+	//return ((ulong)C3)*(ulong)4294967296+(ulong)C5;
+	uint2 out2;
+	out2.x=C5;
+	out2.y=C3;
+	return out2;
+}
+
+
+
+uint2 u2mymullo128(uint2 a,uint2 b){
+	uint a32=a.y;
+	uint a10=a.x;
+	uint b32=b.y;
+	uint b10=b.x;
+	
+	uint a1=a10/65536;
+	uint a0=a10%65536;
+	
+	uint b1=b10/65536;
+	uint b0=b10%65536;
+	
+	uint C1,C0;
+	
+	uint2 u2ina;u2ina.x=a0;u2ina.y=a1;
+	uint2 u2inb;u2inb.x=b0;u2inb.y=b1;
+	uint2 u2out=mymul64(u2ina,u2inb);
+	C1=u2out.y;
+	C0=u2out.x;
+	//mymul64(a1,a0,b1,b0,&C1,&C0);
+	C1+=a32*b10+a10*b32;
+	
+	//return ((ulong)C1)*(ulong)4294967296+(ulong)C0;
+	
+	uint2 out2;
+	out2.x=C0;
+	out2.y=C1;
+	return out2;
+}
+
+/* Right-shift that also handles the 64 case. */
+uint2 u2shr(uint2 x, int n)
+{
+	uint2 outd;
+	if (n>=32){
+		outd.y=0;
+		outd.x=x.y>>(n-32);
+	}else{
+		outd.y=x.y>>n;
+		outd.x=(x.y%(1<<n))<<(32-n);
+		outd.x+=x.x>>n;
+	}
+	return outd;
+}
+uint2 u2shl(uint2 x, int n)
+{
+	uint2 outd;
+	if (n>=32){
+		outd.x=0;
+		outd.y=x.x<<(n-32);
+	}else{
+		outd.x=x.x<<n;
+		outd.y=x.x>>(32-n);
+		outd.y+=x.y<<n;
+	}
+	return outd;
+}
+
+
+////////////////////////////////////////////////////////////ここまで
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -502,7 +787,6 @@ uint2 ulsub(uint2 a,uint2 b){
 	return a;
 }
 
-
 //足し算、オーバーフロー考慮あり
 uint3 uladdofw(uint2 a,uint2 b){
 	uint3 outd;
@@ -535,8 +819,9 @@ ulong u2toul(uint2 a){
    "Improved division by invariant integers". */
 ulong reciprocal_word(ulong d)
 {
-        ulong d0, d9, d40, d63, v0, v1, v2, ehat, v3, hi, lo;
-		uint2 v4;
+        ulong d0, d9, d40, d63;
+		uint2 v4,hi,lo,v3,ehat,v2,v1;
+		uint v0;
         const uint table[] = {
         /* Generated with:
            for (int i = (1 << 8); i < (1 << 9); i++)
@@ -569,24 +854,32 @@ ulong reciprocal_word(ulong d)
         0x40a, 0x408, 0x406, 0x404, 0x402, 0x400
         };
 
-        d0 = d & 1;
-        d9 = shr(d,55);
-        d40 = shr(d,24) + 1;
-        d63 = shr(d,1) + d0;
+        d0 = d & 1;//[0,2)
+        d9 = shr(d,55);// [256,512)
+        d40 = shr(d,24) + 1;// (2^39,2^40]
+        d63 = shr(d,1) + d0;// (2^62,2^63]
 #ifdef CREATETABLEFLAG
 		v0 = CreateTable(d9 - 256);
 #else
 		v0 = table[d9 - 256];
 #endif
-        v1 = shl(v0,11) - shr( mymullo128(mymullo128(v0, v0), d40) , 40 ) - 1;
-        v2 = shl(v1,13) + shr(mymullo128(v1, (1UL << 60) - mymullo128(v1, d40)) , 47);
-        ehat = shr(v2,1) * d0 - mymullo128(v2, d63);
-        v3 = shl(v2,31) + shr(mymulhi128(v2, ehat),1);
-        mymul128(v3, d, &hi, &lo);
+		//v0は高々2047
+		uint2 tmp=u2mymullo128((uint2){v0*v0,0},ultou2(d40));
+		v1.y=0;
+		v1.x = (v0<<11)-1-(tmp.y>>8);
+        //v1 = ulsub(ulsub(u2shl(ultou2(v0),11),(uint2){1,0}),u2shr( u2mymullo128(u2mymullo128(ultou2(v0), ultou2(v0)), ultou2(d40)) , 40 ));
+        
 		
-		uint3 out3=uladdofw(ultou2(lo),ultou2(d));
-		
-        v4 = ulsub(ultou2(v3) , uladd(uladd(ultou2(hi),ultou2(d)),(uint2){out3.z,0}));
+		v2 = uladd(u2shl(v1,13) , u2shr(u2mymullo128(v1, ulsub((uint2){0,1<<28} , u2mymullo128(v1, ultou2(d40)))) , 47));
+		ehat.x=0;ehat.y=0;
+		if (d0)ehat=u2shr(v2,1);
+        ehat =ulsub(ehat,u2mymullo128(v2, ultou2(d63)));
+        v3 = uladd(u2shl(v2,31),u2shr(u2mymulhi128(v2, ehat),1));
+        uint4 out4=u2mymul128(v3, ultou2(d));
+		hi=out4.zw;
+		lo=out4.xy;
+		uint3 out3=uladdofw(lo,ultou2(d));
+        v4 = ulsub(v3 , uladd(uladd(hi,ultou2(d)),(uint2){out3.z,0}));
         return u2toul(v4);
 }
 
