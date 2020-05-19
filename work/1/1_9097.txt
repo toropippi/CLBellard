@@ -1,0 +1,3 @@
+9169541b601db24feac163d4d1b76a88d6cbdfb32c4f37bf
+0	GeForce RTX 2080 Ti
+76460ms
