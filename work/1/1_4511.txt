@@ -1,3 +1,0 @@
-88f2dfc95b40a00cf4b6e7c773d70f881346dc26149ddfd3
-0	GeForce RTX 2080 Ti
-78863ms
