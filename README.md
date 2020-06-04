@@ -65,4 +65,3 @@ Allow optimizations for floating-point arithmetic that ignore the signedness of 
 # output pi
 Note that the lower digits of the result contain incorrect numbers.  
 計算結果の下位桁は不正確な数字を含んでいることに注意してください。
-
