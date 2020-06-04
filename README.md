@@ -39,19 +39,19 @@ Allow optimizations for floating-point arithmetic that ignore the signedness of 
   
   NVIDIA GPU
   | Build options name | 106bit | 192bit | 192bit(beta) |
-  ----|----|---- 
+  ----|----|----|---- 
   | -cl-denorms-are-zero | o | o | o |
   | -cl-fast-relaxed-math | o | o | o |
   
   NVIDIA GPU
   | Build options name | 106bit | 192bit | 192bit(beta) |
-  ----|----|---- 
+  ----|----|----|---- 
   | -cl-denorms-are-zero | o | o | o |
   | -cl-fast-relaxed-math | o | o | o |
   
   NVIDIA GPU
   | Build options name | 106bit | 192bit | 192bit(beta) |
-  ----|----|---- 
+  ----|----|----|---- 
   | -cl-denorms-are-zero | o | o | o |
   | -cl-fast-relaxed-math | o | o | o |
   
