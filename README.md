@@ -36,6 +36,13 @@ a* b + cをmadに置き換えることができます。 madは精度を下げ�
 Allow optimizations for floating-point arithmetic that ignore the signedness of zero. IEEE 754 arithmetic specifies the behavior of distinct +0.0 and -0.0 values, which then prohibits simplification of expressions such as x+0.0 or 0.0*x (even with -clfinite-math only). This option implies that the sign of a zero result isn't significant.  
 ゼロの符号付きを無視する浮動小数点演算の最適化を許可します。 IEEE 754算術は、+ 0.0と-0.0の異なる値の動作を指定します。これにより、x + 0.0や0.0 * xなどの式の単純化が禁止されます（-clfinite-mathのみでも）。 このオプションは、ゼロの結果の符号が重要でないことを意味します。
   
+  
+  | TH1 | TH2 |
+----|---- 
+| TD1 | TD3 |
+| TD2 | TD4 |
+
 # output pi
 Note that the lower digits of the result contain incorrect numbers.  
 計算結果の下位桁は不正確な数字を含んでいることに注意してください。
+

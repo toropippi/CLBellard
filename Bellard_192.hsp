@@ -61,7 +61,7 @@ DEBUG_99LOAD=0//waitいれてGPUフリーズをさける
 	mes
 
 	mes "3. Select precision"
-	precisionstr="106bit\n192bit"
+	precisionstr="106bit\n192bit\n192bit(beta)"
 	combox precision,100,precisionstr
 	mes
 	
@@ -197,7 +197,11 @@ DEBUG_99LOAD=0//waitいれてGPUフリーズをさける
 		if precisionstr=="1"{
 			mes "precision=192bit"
 		}else{
-			mes "precision="
+			if precisionstr=="2"{
+				mes "precision=192bit beta"
+			}else{
+				mes "precision="
+			}
 		}
 	}
 	return
@@ -216,7 +220,7 @@ DEBUG_99LOAD=0//waitいれてGPUフリーズをさける
 
 *workStart
 	if (int64(digitstr1)>=5)&(int64(digitstr1)<=int64("999999999999999999")){
-		if (precisionstr=="0")|(precisionstr=="1"){
+		if (precisionstr=="0")|(precisionstr=="1")|(precisionstr=="2"){
 			goto*workStart2
 		}
 	}
@@ -280,12 +284,12 @@ DEBUG_99LOAD=0//waitいれてGPUフリーズをさける
 		AddAns cnt,bigSumMem,dev_ans
 		mes2 "Step"+cnt+" time "+(mygettime()-onetime)+"ms "
 		//一部の正解を取り出し表示
-		HCLReadBuffer bigSumMem,host_ans,8*(2+precision),0,0
+		HCLReadBuffer bigSumMem,host_ans,8*(2+(precision!=0)),0,0
 		gosub*mes_host_ans
 	loop
 
 	//答えを取り出し
-	HCLReadBuffer dev_ans,host_ans,8*(2+precision),0,0
+	HCLReadBuffer dev_ans,host_ans,8*(2+(precision!=0)),0,0
 	mes2 "All calc time "+(mygettime()-starttime)+"ms\n"
 	mes2 "PI value output -> "
 	gosub*mes_host_ans
@@ -324,7 +328,7 @@ DEBUG_99LOAD=0//waitいれてGPUフリーズをさける
 		calctime=mygettime()-onetime
 		lastcnt=cnt
 		//一部の正解を取り出し
-		HCLReadBuffer bigSumMem,host_ans,8*(2+precision),0,0
+		HCLReadBuffer bigSumMem,host_ans,8*(2+(precision!=0)),0,0
 		//host_ansを文字列に変換してセーブ
 		fsave host_ans,calctime,precision,todo_stepno.cnt,todo_batchno.cnt
 	loop
@@ -347,7 +351,7 @@ DEBUG_99LOAD=0//waitいれてGPUフリーズをさける
 	if (precision==0){
 		mes2 hexadecimal_dd(host_ans)+"\n"
 	}
-	if (precision==1){
+	if (precision==1)|(precision==2){
 		dim_i64 ltmp,3
 		ltmp.0=host_ans.2
 		ltmp.1=host_ans.1
@@ -374,7 +378,7 @@ DEBUG_99LOAD=0//waitいれてGPUフリーズをさける
 	exist "Bellard.cl"
 	if strsize!=-1{
 		prg=HCLCreateProgram("Bellard.cl",option)
-		//prg2=HCLCreateProgram("Bellard_div2by1.cl",option)
+		prg2=HCLCreateProgram("Bellard_div2by1.cl",option)
 	}else{
 		dialog "clﾌｧｲﾙがincludeできませんでした",1
 		end
@@ -389,21 +393,22 @@ DEBUG_99LOAD=0//waitいれてGPUフリーズをさける
 		krnSum7=HCLCreateKernel(prg,"Sum7")
 	}else{
 		krnSglobal32=HCLCreateKernel(prg,"Sglobal32mtg_192")
-		krnSglobal64=HCLCreateKernel(prg,"Sglobal64mtg_192")
+		if (precision==1){
+			krnSglobal64=HCLCreateKernel(prg,"Sglobal64mtg_192")
+		}else{
+			krnSglobal64=HCLCreateKernel(prg2,"Sglobal64mtg_192_Refresh")
+		}
 		krnSglobalafter=HCLCreateKernel(prg,"Sglobal_after_192")
 		krnSsum=HCLCreateKernel(prg,"Ssum_192")
 		krnSum7=HCLCreateKernel(prg,"Sum7_192")
 	}
 	krnFill8=HCLCreateKernel(prg,"FillBuffer8")
-	
-	//Bellard_div2by1.clのほう
-	//krnSglobal64=HCLCreateKernel(prg2,"Sglobal64mtg_192_Refresh")
 	return
 
 *GlobalMemSet
-	bigSumMem=HCLCreateBuffer(BIGSUM_SIZE*8*(2+precision))//結果はいるデバイスメモリ
-	smallSumMem=HCLCreateBuffer(BIGSUM_SIZE/256*8*(2+precision))//結果はいるデバイスメモリ
-	dev_ans=HCLCreateBuffer(8*(2+precision))//7つの式の合計をためる
+	bigSumMem=HCLCreateBuffer(BIGSUM_SIZE*8*(2+(precision!=0)))//結果はいるデバイスメモリ
+	smallSumMem=HCLCreateBuffer(BIGSUM_SIZE/256*8*(2+(precision!=0)))//結果はいるデバイスメモリ
+	dev_ans=HCLCreateBuffer(8*(2+(precision!=0)))//7つの式の合計をためる
 	//0初期化
 	if (precision==0){//dd精度なら
 		HCLSetKrns krnFill8,dev_ans,0.0,0
@@ -512,7 +517,7 @@ DEBUG_99LOAD=0//waitいれてGPUフリーズをさける
 	if (precision==0){
 		filestr+=hexadecimal_dd(host_ans)+"\n"
 	}
-	if (precision==1){
+	if (precision>=1){
 		dim_i64 ltmp,3
 		ltmp.0=host_ans.2
 		ltmp.1=host_ans.1

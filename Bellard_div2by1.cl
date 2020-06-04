@@ -1,35 +1,5 @@
 #define CREATETABLEFLAG
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 //1threadあたりulongを3つもっているので256threadで全部結果をまとめて繰り上がり処理して結果をグローバルメモリに書き込み
 void shared_reduction_ulong3(ulong* ulsum0_,ulong* ulsum1_,ulong* ulsum2_,__local ulong* p){
 	//shared memoryは4or8kbまで使えるので、とりあえず4として
@@ -106,99 +76,6 @@ void ulong3GlobalADD(ulong ulsum0,ulong ulsum1,ulong ulsum2,__global ulong* bigS
 		bigSum[get_group_id(0)*3+2]=ulsum2;
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -378,17 +255,6 @@ ulong powmodn(ulong x, ulong p, ulong n)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 //メイン計算部分モンゴメリ乗算版64bit、2つのdouble-double(105bit*2)を64bit整数*3にまとめる
 //というバージョンをさらに改造してリフレッシュしたやつ
 //モンゴメリ乗算、最後の割り算はdiv2by1のソースをネットのからコピペしてやっている
@@ -438,7 +304,3 @@ __kernel void Sglobal64mtg_192_Refresh(__global ulong *bigSum,const ulong offset
 
 
 /////////////////////////64bitバージョン　ルーチンここまで//////////////////////
-
-
-
-
