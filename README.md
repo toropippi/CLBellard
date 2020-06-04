@@ -51,18 +51,13 @@ Allow optimizations for floating-point arithmetic that ignore the signedness of 
   | -cl-denorms-are-zero | o | o | o |
   | -cl-fast-relaxed-math | x | x | x |
   
-  Intel GPU
-  | Build options name | 106bit | 192bit | 192bit(beta)intelGPUでは正常に実行できません |
-  ----|----|----|---- 
-  | -cl-denorms-are-zero | o | o | x |
-  | -cl-fast-relaxed-math | x | x | x |
-  
   Intel CPU
   | Build options name | 106bit | 192bit | 192bit(beta) |
   ----|----|----|---- 
   | -cl-denorms-are-zero | o | o | o |
   | -cl-fast-relaxed-math | x | x | x |
   
+  なおIntel GPUではどのモードでもうまく計算できないことがあります。
   
 # output pi
 Note that the lower digits of the result contain incorrect numbers.  
