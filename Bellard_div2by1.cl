@@ -252,6 +252,58 @@ ulong powmodn(ulong x, ulong p, ulong n)
         return res;
 }
 
+ulong modinv64_fast(const ulong m)
+{
+	ulong inv=m;
+	for(int i=0;i<6;i++){
+		inv*=((ulong)2-inv*m);
+	}
+	return (ulong)0-inv;
+}
+
+ulong MR64_fast(const ulong xlo,const ulong xhi,const ulong inv,const ulong modC)
+{
+	ulong xinv=xlo*inv;
+	ulong ret=mul_hi(xinv,modC);
+	if (xlo!=(ulong)0)ret++;
+	ulong ans=ret+xhi;
+	if ((ans>=modC)|(ans<xhi)){
+		ans-=modC;
+	}
+	return ans;
+}
+
+ulong ExpMod64v4w3(ulong n,const ulong modC,const ulong inv,const ulong r2)
+{
+	if (n==(ulong)0) return (ulong)1 % modC;
+
+	ulong b[8];
+	b[0]=MR64_fast(r2,0,inv,modC);
+	b[1]=MR64_fast(r2<<(ulong)10,r2>>(ulong)54,inv,modC);
+	for(int i=2;i<8;i++){
+		b[i]=MR64_fast(b[i-1]*b[1],mul_hi(b[i-1],b[1]),inv,modC);
+	}
+
+	int bits=(int)((ulong)64-clz(n));
+	int first=bits%3;
+	if (first==0) first=3;
+	int pos=bits-first;
+	uint mask=(uint)((1<<first)-1);
+	uint digit=(uint)((n>>(ulong)pos)&(ulong)mask);
+	ulong x=b[digit];
+	while(pos>0){
+		x=MR64_fast(x*x,mul_hi(x,x),inv,modC);
+		x=MR64_fast(x*x,mul_hi(x,x),inv,modC);
+		x=MR64_fast(x*x,mul_hi(x,x),inv,modC);
+		pos-=3;
+		digit=(uint)((n>>(ulong)pos)&(ulong)7);
+		if (digit!=0){
+			x=MR64_fast(x*b[digit],mul_hi(x,b[digit]),inv,modC);
+		}
+	}
+	return MR64_fast(x,0,inv,modC);
+}
+
 
 
 
@@ -274,7 +326,11 @@ __kernel void Sglobal64mtg_192_Refresh(__global ulong *bigSum,const ulong offset
 	
 	for(;k<k_max;k+=gsize)
 	{
-		nmr=powmodn(1024,d-k,dnm);
+		int s=clz(dnm);
+		ulong v=reciprocal_word(dnm<<(ulong)s);
+		ulong r1=((ulong)18446744073709551615)%dnm+(ulong)1;
+		ulong r2=mulmodn(r1,r1,dnm,s,v);
+		nmr=ExpMod64v4w3(d-k,dnm,modinv64_fast(dnm),r2);
 		//k^-1のところ。答えを適宜反転
 		if ((numesign+k%2)%2==1){
 			nmr=dnm-nmr;

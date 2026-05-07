@@ -431,17 +431,31 @@ ulong MR64(const ulong xlo,const ulong xhi,const ulong inv,const ulong modC)
 
 //a=1024のn乗MOD c、モンゴメリ乗算、最適化
 ulong ExpMod64v4(ulong n,const ulong modC,const ulong inv,const ulong r2){
-	ulong a=1024;
-	ulong p=MR64(r2<<(ulong)10,r2>>(ulong)54,inv,modC);
-	ulong x=MR64(r2,0,inv,modC);
-	for(int i=0;i<64;i++){
-		if (n%(ulong)2==(ulong)1){
-			x=MR64(x*p,mul_hi(x,p),inv,modC);
+	if (n==(ulong)0) return (ulong)1 % modC;
+
+	ulong b[8];
+	b[0]=MR64(r2,0,inv,modC);
+	b[1]=MR64(r2<<(ulong)10,r2>>(ulong)54,inv,modC);
+	for(int i=2;i<8;i++){
+		b[i]=MR64(b[i-1]*b[1],mul_hi(b[i-1],b[1]),inv,modC);
+	}
+
+	int bits=(int)((ulong)64-clz(n));
+	int first=bits%3;
+	if (first==0) first=3;
+	int pos=bits-first;
+	uint mask=(uint)((1<<first)-1);
+	uint digit=(uint)((n>>(ulong)pos)&(ulong)mask);
+	ulong x=b[digit];
+	while(pos>0){
+		x=MR64(x*x,mul_hi(x,x),inv,modC);
+		x=MR64(x*x,mul_hi(x,x),inv,modC);
+		x=MR64(x*x,mul_hi(x,x),inv,modC);
+		pos-=3;
+		digit=(uint)((n>>(ulong)pos)&(ulong)7);
+		if (digit!=0){
+			x=MR64(x*b[digit],mul_hi(x,b[digit]),inv,modC);
 		}
-		
-		p=MR64(p*p,mul_hi(p,p),inv,modC);
-		n/=(ulong)2;
-		if (n==(ulong)0)break;
 	}
 	return MR64(x,0,inv,modC);
 }
